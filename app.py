@@ -1,101 +1,80 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
-# 页面配置
-st.set_page_config(page_title="阿伦尼乌斯公式交互工具", layout="wide")
-
-# 标题与说明
-st.title("🧪 阿伦尼乌斯公式交互工具")
-st.markdown(r"""
-公式：
-$k = A \cdot e^{-\frac{E_a}{RT}}$
-- $k$：反应速率常数
-- $A$：指前因子（碰撞频率因子）
-- $E_a$：活化能（J/mol）
-- $R$：气体常数，取 $8.314\ J/(mol·K)$
-- $T$：热力学温度（K）
-""")
-
-# --------------------------
-# 1. 交互参数设置区
-# --------------------------
-st.subheader("1. 调整反应参数")
-col1, col2 = st.columns(2)
-
-with col1:
-    A = st.number_input("指前因子 A (s⁻¹)", value=1e10, format="%.2e")
-    Ea = st.slider("活化能 Ea (kJ/mol)", min_value=10, max_value=200, value=50, step=5)
-
-with col2:
-    T = st.slider("温度 T (K)", min_value=273, max_value=1000, value=298, step=10)
-    show_comparison = st.checkbox("对比不同活化能的反应速率")
-
-# 单位换算：kJ/mol → J/mol
-Ea_J = Ea * 1000
+# 物理常数
 R = 8.314
 
-# --------------------------
-# 2. 核心计算：阿伦尼乌斯公式
-# --------------------------
-# 计算当前参数下的速率常数
-k = A * np.exp(-Ea_J / (R * T))
-lnk = np.log(k)
+st.set_page_config(page_title="阿伦尼乌斯方程", layout="wide")
+st.title("阿伦尼乌斯方程可视化 | Arrhenius Equation")
+st.divider()
 
-# 计算不同温度下的速率常数，用于绘图
-T_range = np.linspace(273, 1000, 200)
-k_range = A * np.exp(-Ea_J / (R * T_range))
-lnk_range = np.log(k_range)
-inv_T = 1 / T_range
+# 侧边栏参数
+st.sidebar.header("参数设置")
+Ea_kJ = st.sidebar.slider("活化能 Eₐ (kJ/mol)", 10, 200, 50, 1)
+A_1e12 = st.sidebar.slider("指前因子 A (×10¹²)", 1.0, 50.0, 10.0, 0.5)
+T = st.sidebar.slider("温度 T (K)", 200, 1000, 298, 1)
 
-# 对比不同活化能的曲线（如果勾选了）
-if show_comparison:
-    Ea_list = [30, 50, 80]
-    colors = ["#1f77b4", "#ff7f0e", "#2ca02c"]
-else:
-    Ea_list = [Ea]
-    colors = ["#ff7f0e"]
+Ea = Ea_kJ * 1000
+A = A_1e12 * 1e12
 
-# --------------------------
-# 3. 结果展示
-# --------------------------
-st.subheader("2. 计算结果")
-col3, col4 = st.columns(2)
+# 实时计算
+k = A * math.exp(-Ea / (R * T))
+lnk = math.log(k)
 
-with col3:
-    st.metric(label="当前温度下的速率常数 k", value=f"{k:.3e} s⁻¹")
-with col4:
-    st.metric(label="ln(k)", value=f"{lnk:.2f}")
+# 数据展示
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("速率常数 k", f"{k:.2e}")
+col2.metric("ln k", f"{lnk:.2f}")
+col3.metric("活化能 Eₐ", f"{Ea_kJ} kJ/mol")
+col4.metric("温度 T", f"{T} K")
 
-# --------------------------
-# 4. 阿伦尼乌斯图可视化
-# --------------------------
-st.subheader("3. 阿伦尼乌斯图（lnk vs 1/T）")
-fig, ax = plt.subplots(figsize=(8, 4))
+st.divider()
 
-for i, Ea_val in enumerate(Ea_list):
-    Ea_J_val = Ea_val * 1000
-    k_val = A * np.exp(-Ea_J_val / (R * T_range))
-    lnk_val = np.log(k_val)
-    ax.plot(inv_T, lnk_val, label=f"Ea={Ea_val} kJ/mol", color=colors[i], linewidth=2)
+# ========== 图1：lnk - 1/T 直线 ==========
+st.subheader("📉 阿伦尼乌斯直线：lnk - 1/T")
+T_range = np.linspace(200, 1000, 80)
+invT_range = 1 / T_range
+lnk_range = np.log(A * np.exp(-Ea / (R * T_range)))
 
-# 标记当前点
-ax.scatter(1/T, lnk, color="red", s=50, zorder=5, label=f"当前点 (T={T}K)")
+fig1, ax1 = plt.subplots(figsize=(6, 3))
+ax1.plot(invT_range, lnk_range, color="#38bdf8", linewidth=2)
+ax1.scatter(1/T, lnk, color="#f87171", s=80, zorder=5)
+ax1.set_xlabel("1/T (K⁻¹)")
+ax1.set_ylabel("ln k")
+ax1.grid(alpha=0.3)
+st.pyplot(fig1, use_container_width=True)
 
-ax.set_xlabel("1/T (K⁻¹)")
-ax.set_ylabel("ln(k)")
-ax.set_title("阿伦尼乌斯图")
-ax.legend()
-ax.grid(alpha=0.3)
-st.pyplot(fig)
+st.divider()
 
-# --------------------------
-# 5. 补充说明与分析
-# --------------------------
-st.subheader("4. 结果分析")
-st.info(f"""
-💡 结论：
-- 活化能越高（曲线越陡），温度对反应速率的影响越大。
-- 温度升高（1/T 减小），所有反应的速率常数都会增大。
-- 当 T={T} K 时，活化能 {Ea} kJ/mol 的反应，速率常数为 {k:.3e} s⁻¹。
-""")
+# ========== ✅ 反应模型：分子碰撞动画 ==========
+st.subheader("⚛️ 微观反应模型：分子碰撞与活化能")
+
+np.random.seed(42)
+n_particles = 60
+x = np.random.uniform(0, 10, n_particles)
+y = np.random.uniform(0, 6, n_particles)
+
+# 速度随温度变化
+speed_scale = T / 300
+vx = np.random.randn(n_particles) * speed_scale
+vy = np.random.randn(n_particles) * speed_scale
+
+# 能量超过活化能 → 有效碰撞
+kinetic_energy = 0.5 * (vx**2 + vy**2)
+threshold = Ea_kJ / 5
+is_active = kinetic_energy > threshold
+
+fig2, ax2 = plt.subplots(figsize=(7, 3.5))
+ax2.scatter(x[is_active], y[is_active], c="#f87171", s=30, label="有效碰撞（反应）")
+ax2.scatter(x[~is_active], y[~is_active], c="#38bdf8", s=30, label="无效碰撞")
+
+# 活化能垒
+ax2.axhspan(2, 4, color="#38bdf8", alpha=0.1)
+ax2.set_title(f"T = {T} K  |  有效碰撞：{sum(is_active)} 个")
+ax2.legend(ncol=3, loc="upper right")
+ax2.axis("off")
+st.pyplot(fig2, use_container_width=True)
+
+st.caption("温度越高 → 分子运动越快 → 有效碰撞越多 → 反应速率越快")
