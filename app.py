@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+import matplotlib.animation as animation
 
 # 物理常数
 R = 8.314
@@ -34,6 +35,7 @@ st.divider()
 
 # ========== 图1：lnk - 1/T 直线 ==========
 st.subheader("📉 阿伦尼乌斯直线：lnk - 1/T")
+
 T_range = np.linspace(200, 1000, 80)
 invT_range = 1 / T_range
 lnk_range = np.log(A * np.exp(-Ea / (R * T_range)))
@@ -48,8 +50,8 @@ st.pyplot(fig1, use_container_width=True)
 
 st.divider()
 
-# ========== ✅ 反应模型：分子碰撞动画 ==========
-st.subheader("⚛️ 微观反应模型：分子碰撞与活化能")
+# ========== ✅ 动态分子碰撞模型（会动！放在这里） ==========
+st.subheader("⚛️ 微观反应模型：分子碰撞动态模拟")
 
 np.random.seed(42)
 n_particles = 60
@@ -61,20 +63,43 @@ speed_scale = T / 300
 vx = np.random.randn(n_particles) * speed_scale
 vy = np.random.randn(n_particles) * speed_scale
 
-# 能量超过活化能 → 有效碰撞
+# 活化能判断
 kinetic_energy = 0.5 * (vx**2 + vy**2)
 threshold = Ea_kJ / 5
 is_active = kinetic_energy > threshold
 
+# 创建动画画布
 fig2, ax2 = plt.subplots(figsize=(7, 3.5))
-ax2.scatter(x[is_active], y[is_active], c="#f87171", s=30, label="有效碰撞（反应）")
-ax2.scatter(x[~is_active], y[~is_active], c="#38bdf8", s=30, label="无效碰撞")
-
-# 活化能垒
-ax2.axhspan(2, 4, color="#38bdf8", alpha=0.1)
-ax2.set_title(f"T = {T} K  |  有效碰撞：{sum(is_active)} 个")
-ax2.legend(ncol=3, loc="upper right")
+ax2.set_xlim(0, 10)
+ax2.set_ylim(0, 6)
 ax2.axis("off")
-st.pyplot(fig2, use_container_width=True)
+ax2.set_title(f"T = {T} K  |  有效碰撞：{sum(is_active)} 个")
+
+# 散点对象
+scatter_active = ax2.scatter(x[is_active], y[is_active], c="#f87171", s=30)
+scatter_inactive = ax2.scatter(x[~is_active], y[~is_active], c="#38bdf8", s=30)
+
+# 动画更新函数
+def update(frame):
+    global x, y
+    x += vx * 0.05
+    y += vy * 0.05
+
+    # 边界反弹
+    x = np.where(x < 0, 10, np.where(x > 10, 0, x))
+    y = np.where(y < 0, 6, np.where(y > 6, 0, y))
+
+    # 更新点位置
+    scatter_active.set_offsets(np.column_stack([x[is_active], y[is_active]]))
+    scatter_inactive.set_offsets(np.column_stack([x[~is_active], y[~is_active]]))
+    return scatter_active, scatter_inactive
+
+# 播放动画
+ani = animation.FuncAnimation(
+    fig2, update, frames=100, interval=50, blit=True
+)
+
+# 在 Streamlit 中展示动画
+st.pyplot(fig2)
 
 st.caption("温度越高 → 分子运动越快 → 有效碰撞越多 → 反应速率越快")
