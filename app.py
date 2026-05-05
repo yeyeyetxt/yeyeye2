@@ -22,7 +22,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# 公式（用 st.latex 原生渲染，彻底解决乱码）
+# 公式（原生渲染，不乱码）
 st.latex(r"k = A \cdot e^{-\frac{E_a}{RT}}")
 st.latex(r"\ln k = -\frac{E_a}{R} \cdot \frac{1}{T} + \ln A")
 st.latex(r"斜率 = -\dfrac{E_a}{R}")
@@ -47,7 +47,7 @@ with col1:
     Ea_kJ = st.slider("活化能 Eₐ (kJ/mol)", 10, 200, 90, 1)
 with col2:
     T = st.slider("温度 T (K)", 200, 1000, 493, 1)
-    compare_Ea = st.checkbox("对比不同活化能")
+    compare_Ea = st.checkbox("对比不同活化能", value=False)
 
 Ea = Ea_kJ * 1000  # 转成 J/mol
 
@@ -128,20 +128,34 @@ st.components.v1.html(html_code, height=420)
 
 st.caption("✅ 温度升高 → 分子动能增大 → 有效碰撞增多 → 反应速率加快")
 
-# ------------------- 4. 阿伦尼乌斯直线图 -------------------
+# ------------------- 4. 阿伦尼乌斯直线图（带对比功能） -------------------
 st.divider()
 st.subheader("📉 阿伦尼乌斯图：lnk - 1/T 关系")
 
 T_range = np.linspace(200, 1000, 80)
 invT_range = 1 / T_range
-lnk_range = np.log(A) - Ea / (R * T_range)
 
 fig_line, ax_line = plt.subplots(figsize=(7, 3.5))
-ax_line.plot(invT_range, lnk_range, color="#0ea5e9", linewidth=2.5)
+
+# 主活化能曲线
+lnk_range = np.log(A) - Ea / (R * T_range)
+ax_line.plot(invT_range, lnk_range, color="#0ea5e9", linewidth=2.5, label=f"Eₐ = {Ea_kJ} kJ/mol")
 ax_line.scatter(1/T, lnk, color="#ef4444", s=90, zorder=5)
+
+# 对比不同活化能的曲线
+if compare_Ea:
+    # 定义几个不同的活化能
+    compare_Ea_list = [30, 60, 120, 150]
+    colors = ["#22c55e", "#f59e0b", "#8b5cf6", "#ec4899"]
+    for idx, ea in enumerate(compare_Ea_list):
+        ea_J = ea * 1000
+        lnk_compare = np.log(A) - ea_J / (R * T_range)
+        ax_line.plot(invT_range, lnk_compare, color=colors[idx], linestyle="--", linewidth=1.5, label=f"Eₐ = {ea} kJ/mol")
+
 ax_line.set_xlabel("1/T  (K⁻¹)")
 ax_line.set_ylabel("ln k")
 ax_line.grid(alpha=0.3)
+ax_line.legend()
 st.pyplot(fig_line, use_container_width=True)
 
 # ------------------- 5. 说明与结论 -------------------
@@ -149,7 +163,7 @@ st.divider()
 with st.expander("💡 说明"):
     st.markdown("""
     - 阿伦尼乌斯直线斜率 $= -\dfrac{E_a}{R}$
-    - 活化能 $E_a$ 越大，斜率绝对值越大
+    - 活化能 $E_a$ 越大，斜率绝对值越大，直线越陡
     - 由斜率可反算活化能：$E_a = -R \\times 斜率$
     """)
 
