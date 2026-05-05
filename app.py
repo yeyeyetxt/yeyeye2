@@ -9,12 +9,12 @@ R = 8.314
 # ------------------- 页面配置 -------------------
 st.set_page_config(page_title="阿伦尼乌斯公式交互工具", layout="wide")
 
-# 标题 + 居中公式（解决不对称问题）
+# 标题（居中对齐）
 st.markdown(
     """
     <div style="text-align: center;">
-        <h1 style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-            <span style="color:#ec4899;">🌸</span>
+        <h1 style="display: inline-flex; align-items: center; gap: 10px;">
+            <span style="color:#ec4899; font-size: 2.5rem;">🌸</span>
             阿伦尼乌斯公式交互工具
         </h1>
     </div>
@@ -22,7 +22,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# 居中显示公式
+# 公式（修复LaTeX语法，居中渲染）
 st.markdown(
     r"""
     <div style="text-align: center; font-size: 1.2em;">
@@ -74,30 +74,28 @@ with col_slope:
 
 st.text("阿伦尼乌斯图")
 
-# ------------------- 3. 微观反应模型：JS 真正会动的动画 -------------------
+# ------------------- 3. 微观反应模型：JS 动画（修复版） -------------------
 st.divider()
 st.subheader("🔬 微观反应模型：分子碰撞动态模拟")
 
-# 把温度和活化能传给JS动画
 speed_factor = T / 300
-effective_ratio = min(100, max(0, 100 - (Ea_kJ / 2)))  # 活化能越高，有效碰撞比例越低
+effective_ratio = min(100, max(0, 100 - (Ea_kJ / 2))) / 100
 
 html_code = f"""
 <div style="display:flex; justify-content:center;">
 <canvas id="canvas" width="800" height="350" style="border-radius:8px;"></canvas>
 </div>
-<p style="text-align:center; font-size:14px;">T = {T} K ｜ 活化能 Eₐ = {Ea_kJ} kJ/mol ｜ 预计有效碰撞比例 ≈ {effective_ratio:.0f}%</p >
+<p style="text-align:center; font-size:14px;">T = {T} K ｜ 活化能 Eₐ = {Ea_kJ} kJ/mol ｜ 预计有效碰撞比例 ≈ {effective_ratio*100:.0f}%</p >
 
 <script>
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const W = canvas.width;
 const H = canvas.height;
-const N = 60; // 分子总数
-const speedFactor = {speed_factor.toFixed(2)};
-const effectiveRatio = {effective_ratio / 100};
+const N = 60;
+const speedFactor = {speed_factor:.2f};
+const effectiveRatio = {effective_ratio:.2f};
 
-// 分子数据
 let molecules = [];
 for (let i = 0; i < N; i++) {{
     let speed = (Math.random() * 2 + 0.5) * speedFactor;
@@ -116,17 +114,12 @@ for (let i = 0; i < N; i++) {{
 function animate() {{
     ctx.clearRect(0, 0, W, H);
     molecules.forEach(m => {{
-        // 移动
         m.x += m.vx;
         m.y += m.vy;
-
-        // 边界反弹
         if (m.x < 0 || m.x > W) m.vx *= -1;
         if (m.y < 0 || m.y > H) m.vy *= -1;
         m.x = Math.max(0, Math.min(W, m.x));
         m.y = Math.max(0, Math.min(H, m.y));
-
-        // 画分子
         ctx.beginPath();
         ctx.arc(m.x, m.y, 5, 0, Math.PI * 2);
         ctx.fillStyle = m.isReactive ? '#ef4444' : '#0ea5e9';
@@ -142,7 +135,7 @@ st.components.v1.html(html_code, height=420)
 
 st.caption("✅ 温度升高 → 分子动能增大 → 有效碰撞增多 → 反应速率加快")
 
-# ------------------- 4. 阿伦尼乌斯直线图（斜率图，你要的！） -------------------
+# ------------------- 4. 阿伦尼乌斯直线图 -------------------
 st.divider()
 st.subheader("📉 阿伦尼乌斯图：lnk - 1/T 关系")
 
