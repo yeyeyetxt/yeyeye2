@@ -9,7 +9,7 @@ R = 8.314
 # ------------------- 页面配置 -------------------
 st.set_page_config(page_title="阿伦尼乌斯公式交互工具", layout="wide")
 
-# 标题（居中对齐）
+# 标题
 st.markdown(
     """
     <div style="text-align: center;">
@@ -22,17 +22,10 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# 公式（修复LaTeX语法，居中渲染）
-st.markdown(
-    r"""
-    <div style="text-align: center; font-size: 1.2em;">
-        $$k = A \cdot e^{-\frac{E_a}{RT}}$$
-        $$\ln k = -\frac{E_a}{R} \cdot \frac{1}{T} + \ln A$$
-        <p><strong>斜率 = $-\dfrac{E_a}{R}$</strong></p >
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+# 公式（用 st.latex 原生渲染，彻底解决乱码）
+st.latex(r"k = A \cdot e^{-\frac{E_a}{RT}}")
+st.latex(r"\ln k = -\frac{E_a}{R} \cdot \frac{1}{T} + \ln A")
+st.latex(r"斜率 = -\dfrac{E_a}{R}")
 
 with st.expander("公式参数说明"):
     st.markdown("""
@@ -74,7 +67,7 @@ with col_slope:
 
 st.text("阿伦尼乌斯图")
 
-# ------------------- 3. 微观反应模型：JS 动画（修复版） -------------------
+# ------------------- 3. 微观反应模型：JS 动画 -------------------
 st.divider()
 st.subheader("🔬 微观反应模型：分子碰撞动态模拟")
 
